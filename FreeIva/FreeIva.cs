@@ -50,7 +50,12 @@ namespace FreeIva
 				var internalCameraObject = new GameObject("internalCamera");
 				internalCameraObject.transform.SetParent(internalSpace.transform, false);
 				var internalCamera = internalCameraObject.AddComponent<Camera>();
+				internalCamera.clearFlags = CameraClearFlags.Depth;
 				internalCamera.cullingMask = (1 << 16) | (1 << 20);
+				internalCamera.depth = 3;
+				internalCamera.eventMask = -65537;
+				internalCamera.farClipPlane = 50;
+				internalCamera.nearClipPlane = 0.01f;
 				internalCameraObject.AddComponent<InternalCamera>();
 				gameObject.AddComponent<CrewHatchController>();
 
