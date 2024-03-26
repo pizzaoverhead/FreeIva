@@ -6,53 +6,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Profiling;
 
-/* Quick list
- * 
- * 2019:
- *   Multiple parts -> colliders only show for the first part.
- *   PropHatch spawns in root part, not current part - Fixed
- *   Colliders drifting apart over time???
- *   World space colliders pushes vessels apart and destroys them.
- * 
- * ModuleFreeIva's OnStart currently only operates on the active vessel. Other craft switched to will have uninitialised hatches.
- * Fix issues with loading, restarting etc.
- * Finish colliders for the rest of the parts.
- * Fix render queue to view through mutliple parts and windows.
- * Fix startup states for hatches, hide colliders.
- * Set up visible filler colliders.
- * Split cfg files out to individual parts.
- * Move cfg entries to the Internal rather than the Part.
- * 
- * 2021-02-25, KSP 1.11.1
- * IVA locations aren't affected by physics flexing between parts, always located relative to the root part.
- * 
- * Roadmap:
- * 1. Get gravity working, with legs.
- *      Some drifting of vertical over time?
- *      Capsule collider needs to be oriented correctly (freeze axes) and replaced with sphere for zero-gravity.
- *      Camera height needs to be raised from centre of capsule.
- * 2. Get multiple instances of the same part working.
- * 3. Get hatches and colliders set up for the stock parts.
- * 4. Documentation for users and modellers.
- * 5. Release!
- * - Mask models for stock parts: Need a mask similar to the stock ones, but with holes only for windows and where hatches can open.
- *      Hatch masks should probably be a separate mesh - Add transparent windows to them while doing this?
- *      C:\Games\Kerbal Space Program\GameData\Squad\Spaces\OverlayMasks
- * - IVA crew transfer.
- * - Climbing, mobility etc.
- * - IVA to EVA (open external hatches).
- * - IVAs for traversable stock parts.
- * - Buckle/unbuckle sound effects.
- * - Ladders/handles
- * - Disable window zoom camera interaction (click and physics).
- * - Collide with terrain or go on EVA when leaving the vessel (switch to world space physics).
- * - Fix or disallow changing the active kerbal with V.
- * - Persist hatch states.
- * - Test in Editor (VAB/SPH)?
- * - Key binding to toggle helmet. Visible helmet with animation?
- * - Mesh switcher: Add doorways when external nodes have approprate parts attached.
- */
-
 // Assistance received from: egg
 namespace FreeIva
 {
@@ -94,6 +47,14 @@ namespace FreeIva
 				var cameraManager = gameObject.AddComponent<CameraManager>();
 				cameraManager.enabled = false;
 				var internalSpace = gameObject.AddComponent<InternalSpace>();
+				var internalCameraObject = new GameObject("internalCamera");
+				internalCameraObject.transform.SetParent(internalSpace.transform, false);
+				var internalCamera = internalCameraObject.AddComponent<Camera>();
+				internalCamera.cullingMask = (1 << 16) | (1 << 20);
+				internalCameraObject.AddComponent<InternalCamera>();
+				gameObject.AddComponent<CrewHatchController>();
+
+				FlightGlobals.fetch.enabled = false;
 			}
 
 			Settings.LoadSettings();
@@ -596,9 +557,12 @@ namespace FreeIva
 					var vessel = EditorLogic.fetch.rootPart.gameObject.AddComponent<Vessel>();
 					vessel.enabled = false;
 					FlightGlobals.fetch.activeVessel = vessel;
+					vessel.parts = new List<Part>();
+					Component.Destroy(vessel.precalc);
+					foreach (var vm in vessel.vesselModules) Component.Destroy(vm);
+					vessel.vesselModules.Clear();
+					ShipConstruction.ShipManifest.AssignCrewToVessel(EditorLogic.fetch.ship);
 					EnablePartInternalsRecursive(EditorLogic.fetch.rootPart, vessel);
-					FlightGlobals.fetch.activeVessel = null;
-					Component.DestroyImmediate(vessel);
 				}
 
 				InternalModuleFreeIva.RefreshInternals();
