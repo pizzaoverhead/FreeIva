@@ -40,6 +40,12 @@ namespace FreeIva
 		[KSPField]
 		public Vector3 centrifugeAlignmentRotation = new Vector3(180, 0, 180);
 
+		[KSPEvent(guiActiveEditor = true)]
+		public void ActivateInEditor()
+		{
+			FreeIva.EnableInternals();
+		}
+
 		public IDeployable Deployable
 		{
 			get; private set;
@@ -195,7 +201,7 @@ namespace FreeIva
 		// In particular the Kerbalism GravityRing is a little tricky
 		public override void OnStart(StartState state)
 		{
-			if (!HighLogic.LoadedSceneIsFlight) return;
+			if (!(HighLogic.LoadedSceneIsFlight || HighLogic.LoadedSceneIsEditor)) return;
 
 			Centrifuge = CentrifugeFactory.Create(part, centrifugeTransformName, centrifugeAlignmentRotation);
 			Deployable = Centrifuge as IDeployable; // some centrifuges may also be deployables

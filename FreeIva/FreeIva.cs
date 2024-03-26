@@ -59,7 +59,7 @@ namespace FreeIva
 	/// <summary>
 	/// Main controller for FreeIva behaviours.
 	/// </summary>
-	[KSPAddon(KSPAddon.Startup.Flight, false)]
+	[KSPAddon(KSPAddon.Startup.FlightAndEditor, false)]
 	public class FreeIva : MonoBehaviour
 	{
 		public static Part CurrentPart => CurrentInternalModuleFreeIva == null ? null : CurrentInternalModuleFreeIva.part;
@@ -89,16 +89,26 @@ namespace FreeIva
             false;
 #endif
 
+			if (HighLogic.LoadedSceneIsEditor)
+			{
+				var cameraManager = gameObject.AddComponent<CameraManager>();
+				cameraManager.enabled = false;
+				var internalSpace = gameObject.AddComponent<InternalSpace>();
+			}
+
 			Settings.LoadSettings();
-			SetRenderQueues(FlightGlobals.ActiveVessel.rootPart);
+			InternalModuleFreeIva.RefreshDepthMasks();
 
 			Physics.IgnoreLayerCollision((int)Layers.Kerbals, (int)Layers.InternalSpace);
 			Physics.IgnoreLayerCollision((int)Layers.Kerbals, (int)Layers.Kerbals, false);
 
-			var ivaSun = InternalSpace.Instance.transform.Find("IVASun").GetComponent<IVASun>();
-			ivaSun.ivaLight.shadowBias = 0;
-			ivaSun.ivaLight.shadowNormalBias = 0;
-			ivaSun.ivaLight.shadows = LightShadows.Hard;
+			var ivaSun = InternalSpace.Instance.transform.Find("IVASun")?.GetComponent<IVASun>();
+			if (ivaSun)
+			{
+				ivaSun.ivaLight.shadowBias = 0;
+				ivaSun.ivaLight.shadowNormalBias = 0;
+				ivaSun.ivaLight.shadows = LightShadows.Hard;
+			}
 		}
 
 		private void OnVesselChange(Vessel vessel)
@@ -367,16 +377,6 @@ namespace FreeIva
 
 		public static int DepthMaskQueue = 999;
 
-		/// <summary>
-		/// 
-		/// </summary>
-		/// <param name="activePart">The part that the IVA player is currently inside.</param>
-		public static void SetRenderQueues(Part activePart)
-		{
-			InternalModuleFreeIva.RefreshDepthMasks();
-			return;
-		}
-
 		List<InternalModuleFreeIva> possibleModules = new List<InternalModuleFreeIva>();
 		Vector3 _previousCameraPosition = Vector3.zero;
 		public void UpdateCurrentPart()
@@ -584,29 +584,21 @@ namespace FreeIva
 					currentInternal.gameObject.SetActive(true);
 					currentInternal.SetVisible(true);
 				}
-				else
+				else if (HighLogic.LoadedSceneIsFlight)
 				{
 					foreach (Part p in FlightGlobals.ActiveVessel.parts)
 					{
-						if (ShouldCreateInternals(p))
-						{
-							if (p.internalModel == null)
-							{
-								p.CreateInternalModel();
-								if (p.internalModel != null)
-								{
-									p.internalModel.Initialize(p);
-									p.internalModel.SpawnCrew();
-								}
-							}
-
-							if (p.internalModel != null)
-							{
-								p.internalModel.gameObject.SetActive(true);
-								p.internalModel.SetVisible(true);
-							}
-						}
+						EnablePartInternals(p);
 					}
+				}
+				else if (HighLogic.LoadedSceneIsEditor)
+				{
+					var vessel = EditorLogic.fetch.rootPart.gameObject.AddComponent<Vessel>();
+					vessel.enabled = false;
+					FlightGlobals.fetch.activeVessel = vessel;
+					EnablePartInternalsRecursive(EditorLogic.fetch.rootPart, vessel);
+					FlightGlobals.fetch.activeVessel = null;
+					Component.DestroyImmediate(vessel);
 				}
 
 				InternalModuleFreeIva.RefreshInternals();
@@ -616,6 +608,43 @@ namespace FreeIva
 			{
 				Debug.LogError("[FreeIVA] Error enabling internals: " + ex.Message + ", " + ex.StackTrace);
 			}
+		}
+
+		static void EnablePartInternals(Part p)
+		{
+			if (ShouldCreateInternals(p))
+			{
+				if (p.internalModel == null)
+				{
+					p.CreateInternalModel();
+					if (p.internalModel != null)
+					{
+						p.internalModel.Initialize(p);
+						p.internalModel.SpawnCrew();
+					}
+				}
+
+				if (p.internalModel != null)
+				{
+					p.internalModel.gameObject.SetActive(true);
+					p.internalModel.SetVisible(true);
+				}
+			}
+		}
+
+		static void EnablePartInternalsRecursive(Part part, Vessel vessel)
+		{
+			if (part == null) return;
+
+			part.vessel = vessel;
+			EnablePartInternals(part);
+
+			foreach (var child in part.children)
+			{
+				EnablePartInternalsRecursive(child, vessel);
+			}
+
+			part.vessel = null;
 		}
 	}
 }

@@ -705,10 +705,58 @@ namespace FreeIva
 			}
 		}
 
+		static Vector3 InternalToWorld(Vector3 internalSpacePosition)
+		{
+			if (HighLogic.LoadedSceneIsFlight)
+			{
+				return InternalSpace.InternalToWorld(internalSpacePosition);
+			}
+			else
+			{
+				return x_internalToPartSpace * internalSpacePosition + EditorLogic.RootPart.transform.position;
+			}
+		}
+
+		static Quaternion InternalToWorld(Quaternion internalSpaceRotation)
+		{
+			if (HighLogic.LoadedSceneIsFlight)
+			{
+				return InternalSpace.InternalToWorld(internalSpaceRotation);
+			}
+			else
+			{
+				return x_internalToPartSpace * EditorLogic.RootPart.transform.rotation;
+			}
+		}
+
+		static Vector3 WorldToInternal(Vector3 worldSpacePosition)
+		{
+			if (HighLogic.LoadedSceneIsFlight)
+			{
+				return InternalSpace.WorldToInternal(worldSpacePosition);
+			}
+			else
+			{
+				return x_partToInternalSpace * (worldSpacePosition - EditorLogic.RootPart.transform.position);
+			}
+		}
+
+		static Quaternion WorldToInternal(Quaternion worldSpaceRotation)
+		{
+			if (HighLogic.LoadedSceneIsFlight)
+			{
+				return InternalSpace.WorldToInternal(worldSpaceRotation);
+			}
+			else
+			{
+				return x_partToInternalSpace * worldSpaceRotation;
+			}
+		}
+
 		void Update()
 		{
-			this.internalModel.transform.position = InternalSpace.WorldToInternal(part.transform.position);
-			this.internalModel.transform.rotation = InternalSpace.WorldToInternal(part.transform.rotation) * Quaternion.Euler(90, 0, 180);
+			this.internalModel.transform.position = WorldToInternal(part.transform.position);
+			this.internalModel.transform.rotation = WorldToInternal(part.transform.rotation) * Quaternion.Euler(90, 0, 180);
 
 			if (Centrifuge != null)
 			{
