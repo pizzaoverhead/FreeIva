@@ -15,9 +15,10 @@
 * https://yaclog.readthedocs.io
 * https://keepachangelog.com
 
-## Unreleased
+## 0.2.19.0 - 2024-04-16
 
 * something
+
 
 ## 0.2.18.4 - 2024-03-03
 
