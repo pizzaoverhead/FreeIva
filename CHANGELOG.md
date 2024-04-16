@@ -15,6 +15,11 @@
 * https://yaclog.readthedocs.io
 * https://keepachangelog.com
 
+## 0.5.0.0 - 2024-04-16
+
+There is nothing permanent except change
+
+
 ## 0.4.2.0 - 2024-04-16
 
 There is nothing permanent except change
