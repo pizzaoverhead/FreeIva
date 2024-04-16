@@ -1,0 +1,19 @@
+name: create-release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version-string:
+        type: string
+        required: true
+      changelog-output-file:
+        type: string
+jobs:
+  create-release:
+    uses: KSPModdingLibs/KSPBuildTools/.github/workflows/create-release.yml@main
+    with:
+      ksp-zip-url: https://github.com/KSPModdingLibs/KSPLibs/raw/main/KSP-1.12.5.zip
+      version-string: ${{ inputs.version-string }}
+      changelog-output-file: GameData/FreeIva/FreeIvaChangelog.cfg
+    secrets:
+      ksp-zip-password: ${{ secrets.KSP_ZIP_PASSWORD }}
