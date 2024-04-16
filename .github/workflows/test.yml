@@ -1,12 +1,39 @@
-name: Test
+name: update-version
 
 on:
   workflow_dispatch:
+    inputs:
+      version-string:
+        type: string
+      template-extension:
+        type: string
+        default: .versiontemplate
+      files:
+        type: string
+      changelog-input-file:
+        type: string
+        default: CHANGELOG.md
+      changelog-output-file:
+        type: string
+
+defaults:
+  run:
+    shell: bash
 
 jobs:
-  test:
+  update-version:
     runs-on: ubuntu-latest
     steps:
-      - name: test
-        run: echo "test"
+      - name: checkout mod repo
+        uses: actions/checkout@v4
+        with:
+          submodules: true
     
+      - name: update version
+        uses: KSPModdingLibs/KSPBuildTools/.github/actions/update-version@main
+        with:
+          version-string: ${{inputs.version-string}}
+          template-extension: ${{inputs.template-extension}}
+          files: ${{inputs.files}}
+          changelog-input-file: ${{ inputs.changelog-input-file }}
+          changelog-output-file: ${{ inputs.changelog-input-file }}
